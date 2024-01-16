@@ -1,0 +1,19 @@
+[package]
+name = "gltest"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+windows-native = "1.0.40"
+windows-sys = "0.52.0"
+
+[dependencies.windows]
+version = "0.52"
+features = [
+    "UI_Core_AnimationMetrics",
+    "UI_Core_Preview",
+    "UI_WindowManagement_Preview",
+    "UI",
+]
