@@ -44,9 +44,7 @@ fn main() {
 
     let mut msg = window::MSG::default();
     loop {
-        let mut lpMsg = msg.clone() as window::LPMSG;
-        let message_return = unsafe { window::GetMessageW(lpMsg, std::ptr::null_mut(), 0, 0) };
-        // let message_return = unsafe { window::GetMessageW(&mut lpMsg, std::ptr::null_mut(), 0, 0) };
+        let message_return = unsafe { window::GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) };
 
         if message_return == 0 {
             break;

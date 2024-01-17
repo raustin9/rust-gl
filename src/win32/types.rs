@@ -90,3 +90,9 @@ pub type LPWSTR = *mut WCHAR;
 
 #[allow(non_camel_case_types)]
 pub type ULONG_PTR = usize;
+
+#[allow(non_camel_case_types)]
+pub type HDC = HANDLE;
+
+#[allow(non_camel_case_types)]
+pub type BYTE = u8;

@@ -1,9 +1,9 @@
-use std::ptr::{
-    null,
-    null_mut,
-};
+// use std::ptr::{
+//     null,
+//     null_mut,
+// };
 use crate::win32::types::*;
-use crate::win32::core::*;
+// use crate::win32::core::*;
 
 use super::core::MAKEINTRESOURCEW;
 
@@ -13,7 +13,7 @@ macro_rules! unsafe_impl_default_zeroed {
             #[inline]
             #[must_use]
             fn default() -> Self {
-                return unsafe { core::mem::zeroed() };
+                unsafe { core::mem::zeroed() }
             }
         }
     };
@@ -52,6 +52,7 @@ pub struct WNDCLASSW {
     pub lpsxMenuName: LPCWSTR,
     pub lpszClassName: LPCWSTR,
 }
+unsafe_impl_default_zeroed!(WNDCLASSW);
 
 #[repr(C)]
 #[derive(Clone)]
@@ -65,11 +66,32 @@ pub struct MSG {
     pt: POINT,
     lPrivate: DWORD,
 }
-pub type LPMSG = MSG;
+pub type LPMSG = *mut MSG;
 unsafe_impl_default_zeroed!(MSG);
 
+// Painting information for the window
+#[allow(non_snake_case)]
+#[repr(C)]
+pub struct PAINTSTRUCT {
+    hdc: HDC,
+    fErase: BOOL,
+    rcPaint: RECT,
+    fRestore: BOOL,
+    fIncUpdate: BOOL,
+    rgbReserved: [BYTE; 32],
+}
+unsafe_impl_default_zeroed!(PAINTSTRUCT);
+pub type LPPAINTSTRUCT = *mut PAINTSTRUCT;
 
-unsafe_impl_default_zeroed!(WNDCLASSW);
+#[repr(C)]
+pub struct RECT {
+    left: LONG,
+    top: LONG,
+    right: LONG,
+    bottom: LONG,
+}
+unsafe_impl_default_zeroed!(RECT);
+
 
 
 /// CONSTANTS ///
@@ -95,7 +117,11 @@ pub const WM_DESTROY: u32 = 0x0002;
 
 pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 
-/// WINDOWS API ///
+pub const WM_PAINT: u32 = 0x000F;
+
+pub const COLOR_WINDOW: u32 = 5;
+
+// WINDOWS API //
 
 // Register the window using win32 C API
 #[link(name = "User32")]
@@ -151,6 +177,12 @@ pub unsafe extern "system" fn window_procedure(
     match Msg {
         WM_CLOSE => drop(DestroyWindow(hWnd)),
         WM_DESTROY => PostQuitMessage(zero),
+        WM_PAINT => {
+            let mut ps = PAINTSTRUCT::default();
+            let hdc = BeginPaint(hWnd, &mut ps);
+            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+1) as HBRUSH);
+            EndPaint(hWnd, &ps);
+        }
         _ => {
             return DefWindowProcW(
                 hWnd, 
@@ -193,4 +225,9 @@ extern "system" {
     pub fn PostQuitMessage(nExitCode: c_int);
 
     pub fn LoadCursorW(hInstance: HINSTANCE, lpCursor: LPCWSTR) -> HCURSOR;
+
+    // Painting the window
+    pub fn BeginPaint(hWnd: HWND, lpPaint: LPPAINTSTRUCT) -> HDC;
+    pub fn FillRect(hDC: HDC, lprc: *const RECT, hbr: HBRUSH) -> c_int;
+    pub fn EndPaint(hWnd: HWND, lpPaint: *const PAINTSTRUCT) -> BOOL;
 }
