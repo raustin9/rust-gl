@@ -7,7 +7,7 @@
 use crate::win32::types::*;
 use crate::win32::core::*;
 
-
+/// Define a function to zero out a struct's fields
 macro_rules! unsafe_impl_default_zeroed {
     ($t:ty) => {
         impl Default for $t {
@@ -22,7 +22,6 @@ macro_rules! unsafe_impl_default_zeroed {
 
 // WINDOW TYPES //
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
 #[repr(C)]
 pub struct POINT {
     x: LONG,
@@ -56,7 +55,6 @@ pub struct WNDCLASSW {
 unsafe_impl_default_zeroed!(WNDCLASSW);
 
 #[repr(C)]
-#[derive(Clone)]
 #[allow(non_snake_case)]
 pub struct MSG {
     hwnd: HWND,
@@ -111,6 +109,50 @@ pub struct CREATESTRUCTW {
 }
 unsafe_impl_default_zeroed!(CREATESTRUCTW);
 
+/// Enumeration of predefined cursors styles
+pub enum IDCursor {
+    /// Standard arrow and small hourglass
+    AppStarting = 32650,
+    
+    /// Standard arrow
+    Arrow = 32512,
+    
+    /// Crosshair
+    Cross = 32515,
+    
+    /// Hand
+    Hand = 32649,
+    
+    /// Arrow and question mark
+    Help = 32651,
+    
+    /// I-beam
+    IBeam = 32513,
+    
+    /// Slashed circle
+    No = 32648,
+    
+    /// Four-pointed arrow pointing north, south, east, and west
+    SizeAll = 32646,
+    
+    /// Double-pointed arrow pointing northeast and southwest
+    SizeNeSw = 32643,
+    
+    /// Double-pointed arrow pointing north and south
+    SizeNS = 32645,
+    
+    /// Double-pointed arrow pointing northwest and southeast
+    SizeNwSe = 32642,
+    
+    /// Double-pointed arrow pointing west and east
+    SizeWE = 32644,
+    
+    /// Vertical arrow
+    UpArrow = 32516,
+    
+    /// Hourglass
+    Wait = 32514,
+}
 
 /// CONSTANTS ///
 

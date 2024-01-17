@@ -7,14 +7,19 @@ use gltest::win32::{
 
 #[allow(non_snake_case)]
 fn main() {
-    let hInstance = unsafe { win32::core::GetModuleHandleW(std::ptr::null()) };
+    let hInstance = win32::wrapper::get_process_handle();
     let sample_window_class_wn = win32::utils::wide_null("Test Window");
 
     let mut win: window::WNDCLASSW = window::WNDCLASSW::default();
     win.lpfnWndProc = Some(window::window_procedure);
     win.hInstance = hInstance;
     win.lpszClassName = sample_window_class_wn.as_ptr();
-    win.hCursor = unsafe { window::LoadCursorW(std::ptr::null_mut(), window::IDC_ARROW)};
+    win.hCursor = win32::wrapper::load_predefined_cursor(window::IDCursor::Arrow).unwrap();
+
+    let atom = unsafe { win32::wrapper::register_class(&win) }.unwrap_or_else(|()| {
+        let last_error = unsafe { win32::core::GetLastError() };
+        panic!("Could not register the window class. Error code: {}", last_error);
+    });
 
     let atom = unsafe { window::RegisterClassW(&win) };
     if atom == 0 {

@@ -96,3 +96,12 @@ pub type HDC = HANDLE;
 
 #[allow(non_camel_case_types)]
 pub type BYTE = u8;
+
+#[allow(non_camel_case_types)]
+pub type LPCVOID = std::ffi::c_void;
+
+#[allow(non_camel_case_types)]
+pub type va_list = *mut c_char;
+
+#[allow(non_camel_case_types)]
+pub type c_char = i8;

@@ -12,6 +12,16 @@ extern "system" {
 #[link(name = "Kernel32")]
 extern "system" {
     pub fn GetLastError() -> DWORD;
+
+    pub fn FormatMessageW(
+        dwFlags: DWORD,
+        lpSource: LPCVOID,
+        dwMessageId: DWORD,
+        dwLanguageId: DWORD,
+        lpBuffer: LPWSTR,
+        nSize: DWORD,
+        Arguments: va_list,
+    ) -> DWORD;
 }
 
 #[allow(non_snake_case)]
