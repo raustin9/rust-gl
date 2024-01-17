@@ -93,6 +93,23 @@ pub struct RECT {
 }
 unsafe_impl_default_zeroed!(RECT);
 
+#[allow(non_snake_case)]
+#[repr(C)]
+pub struct CREATESTRUCTW {
+    lpCreateParams: LPVOID,
+    hInstance: HINSTANCE,
+    hMenu: HMENU,
+    hWndParent: HWND,
+    cy: c_int,
+    cx: c_int,
+    y: c_int,
+    x: c_int,
+    style: LONG,
+    lpszName: LPCWSTR,
+    lpszClass: LPCWSTR,
+    dwExStyle: DWORD,
+}
+unsafe_impl_default_zeroed!(CREATESTRUCTW);
 
 
 /// CONSTANTS ///
@@ -121,6 +138,14 @@ pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 pub const WM_PAINT: u32 = 0x000F;
 
 pub const COLOR_WINDOW: u32 = 5;
+pub const MB_OKCANCEL: u32 = 1;
+pub const IDOK: c_int = 1;
+
+pub const WM_NCCREATE: u32 = 0x0081;
+pub const WM_CREATE: u32 = 0x0001;
+pub const WM_SETCURSOR: u32 = 0x0020;
+
+pub const GWLP_USERDATA: c_int = -21;
 
 // WINDOWS API //
 
@@ -174,16 +199,41 @@ pub unsafe extern "system" fn window_procedure(
     wParam: WPARAM,
     lParam: LPARAM,
 ) -> LRESULT {
-    let zero: i32 = 0;
     match Msg {
+        // TODO: Set the title of the window in one of the creation events
+        WM_NCCREATE => {
+            println!("NC Create");
+            let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
+            if createstruct.is_null() {
+                return 0;
+            }
+            let boxed_i32_ptr: *mut i32 = (*createstruct).lpCreateParams.cast();
+            SetWindowLongPtrW(hWnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
+            return 1;
+        }
+        WM_CREATE => println!("CREATE"),
         WM_CLOSE => drop(DestroyWindow(hWnd)),
-        WM_DESTROY => PostQuitMessage(zero),
+        WM_DESTROY => {
+            let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+            Box::from_raw(ptr);
+            println!("Cleanup Window");
+            PostQuitMessage(0_i32);
+        }
         WM_PAINT => {
+            let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+            println!("Current ptr: {}", *ptr);
+            *ptr += 1;
             let mut ps = PAINTSTRUCT::default();
             let hdc = BeginPaint(hWnd, &mut ps);
-            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+4) as HBRUSH);
+            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+1) as HBRUSH);
             EndPaint(hWnd, &ps);
         }
+        // WM_SETCURSOR => {
+        //     let hInstance = GetModuleHandleW(std::ptr::null());
+        //     let cursor = LoadCursorW(hInstance, IDC_ARROW);
+        //     let _old_cursor = SetCursor(cursor);
+        //     return 1;
+        // }
         _ => {
             return DefWindowProcW(
                 hWnd, 
@@ -226,9 +276,16 @@ extern "system" {
     pub fn PostQuitMessage(nExitCode: c_int);
 
     pub fn LoadCursorW(hInstance: HINSTANCE, lpCursor: LPCWSTR) -> HCURSOR;
+    pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
 
     // Painting the window
     pub fn BeginPaint(hWnd: HWND, lpPaint: LPPAINTSTRUCT) -> HDC;
     pub fn FillRect(hDC: HDC, lprc: *const RECT, hbr: HBRUSH) -> c_int;
     pub fn EndPaint(hWnd: HWND, lpPaint: *const PAINTSTRUCT) -> BOOL;
+
+    // Closing the window
+    pub fn MessageBoxW(hWnd: HWND, lpText: LPCWSTR, lpCaption: LPCWSTR, uType: UINT);
+
+    pub fn SetWindowLongPtrW(hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR) -> LONG_PTR;
+    pub fn GetWindowLongPtrW(hWnd: HWND, nIndex: c_int) -> LONG_PTR;
 }

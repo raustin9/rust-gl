@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use gltest::win32::{
     self, 
     window,
@@ -6,13 +8,13 @@ use gltest::win32::{
 #[allow(non_snake_case)]
 fn main() {
     let hInstance = unsafe { win32::core::GetModuleHandleW(std::ptr::null()) };
-    let sample_window_class_wn = win32::utils::wide_null("Sample Window Class");
+    let sample_window_class_wn = win32::utils::wide_null("Test Window");
 
     let mut win: window::WNDCLASSW = window::WNDCLASSW::default();
     win.lpfnWndProc = Some(window::window_procedure);
     win.hInstance = hInstance;
     win.lpszClassName = sample_window_class_wn.as_ptr();
-    win.hCursor = unsafe { window::LoadCursorW(hInstance, window::IDC_ARROW)};
+    win.hCursor = unsafe { window::LoadCursorW(std::ptr::null_mut(), window::IDC_ARROW)};
 
     let atom = unsafe { window::RegisterClassW(&win) };
     if atom == 0 {
@@ -20,6 +22,7 @@ fn main() {
         panic!("Could not register the window class, error code: {}", last_error);
     }
 
+    let lparam: *mut i32 = Box::leak(Box::new(5_i32)); // make this leak so that we can clean it up on window destruction rather than scope
     let hwnd = unsafe {
         window::CreateWindowExW(
             0, 
@@ -33,7 +36,7 @@ fn main() {
             std::ptr::null_mut(), 
             std::ptr::null_mut(), 
             hInstance, 
-            std::ptr::null_mut()
+            lparam.cast()
         )
     };
     if hwnd.is_null() {
