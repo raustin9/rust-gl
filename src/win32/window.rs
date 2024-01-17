@@ -1,11 +1,12 @@
+// use core::panic;
+
 // use std::ptr::{
 //     null,
 //     null_mut,
 // };
 use crate::win32::types::*;
-// use crate::win32::core::*;
+use crate::win32::core::*;
 
-use super::core::MAKEINTRESOURCEW;
 
 macro_rules! unsafe_impl_default_zeroed {
     ($t:ty) => {
@@ -180,7 +181,7 @@ pub unsafe extern "system" fn window_procedure(
         WM_PAINT => {
             let mut ps = PAINTSTRUCT::default();
             let hdc = BeginPaint(hWnd, &mut ps);
-            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+1) as HBRUSH);
+            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+4) as HBRUSH);
             EndPaint(hWnd, &ps);
         }
         _ => {

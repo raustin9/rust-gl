@@ -9,7 +9,7 @@ fn main() {
     let sample_window_class_wn = win32::utils::wide_null("Sample Window Class");
 
     let mut win: window::WNDCLASSW = window::WNDCLASSW::default();
-    win.lpfnWndProc = Some(window::DefWindowProcW);
+    win.lpfnWndProc = Some(window::window_procedure);
     win.hInstance = hInstance;
     win.lpszClassName = sample_window_class_wn.as_ptr();
     win.hCursor = unsafe { window::LoadCursorW(hInstance, window::IDC_ARROW)};
