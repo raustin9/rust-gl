@@ -13,3 +13,8 @@ extern "system" {
 extern "system" {
     pub fn GetLastError() -> DWORD;
 }
+
+#[allow(non_snake_case)]
+pub const fn MAKEINTRESOURCEW(i: WORD) -> LPWSTR {
+    return i as ULONG_PTR as LPWSTR;
+}

@@ -84,3 +84,9 @@ pub type LONG = c_long;
 
 #[allow(non_camel_case_types)]
 pub type c_long = i32;
+
+#[allow(non_camel_case_types)]
+pub type LPWSTR = *mut WCHAR;
+
+#[allow(non_camel_case_types)]
+pub type ULONG_PTR = usize;

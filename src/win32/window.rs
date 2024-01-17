@@ -3,6 +3,9 @@ use std::ptr::{
     null_mut,
 };
 use crate::win32::types::*;
+use crate::win32::core::*;
+
+use super::core::MAKEINTRESOURCEW;
 
 macro_rules! unsafe_impl_default_zeroed {
     ($t:ty) => {
@@ -87,6 +90,10 @@ pub const WS_OVERLAPPEDWINDOW: u32 = WS_OVERLAPPED
     | WS_MAXIMIZEBOX;
 pub const CW_USEDEFAULT: c_int = 0x8000_0000_u32 as c_int;
 pub const SW_SHOW: c_int = 5;
+pub const WM_CLOSE: u32 = 0x0010;
+pub const WM_DESTROY: u32 = 0x0002;
+
+pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 
 /// WINDOWS API ///
 
@@ -133,6 +140,30 @@ pub unsafe extern "system" fn dummy_window_procedure(
     return 0;
 }
 
+#[allow(non_snake_case)]
+pub unsafe extern "system" fn window_procedure(
+    hWnd: HWND,
+    Msg: UINT,
+    wParam: WPARAM,
+    lParam: LPARAM,
+) -> LRESULT {
+    let zero: i32 = 0;
+    match Msg {
+        WM_CLOSE => drop(DestroyWindow(hWnd)),
+        WM_DESTROY => PostQuitMessage(zero),
+        _ => {
+            return DefWindowProcW(
+                hWnd, 
+                Msg, 
+                wParam, 
+                lParam
+            );
+        }
+    }
+
+    return 0;
+}
+
 // Show the window
 #[link(name = "User32")]
 extern "system" {
@@ -157,4 +188,9 @@ extern "system" {
     pub fn TranslateMessage(lpMsg: *const MSG) -> BOOL;
 
     pub fn DispatchMessageW(lpMsg: *const MSG) -> LRESULT;
+
+    pub fn DestroyWindow(hWnd: HWND) -> BOOL;
+    pub fn PostQuitMessage(nExitCode: c_int);
+
+    pub fn LoadCursorW(hInstance: HINSTANCE, lpCursor: LPCWSTR) -> HCURSOR;
 }

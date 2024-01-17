@@ -12,6 +12,7 @@ fn main() {
     win.lpfnWndProc = Some(window::DefWindowProcW);
     win.hInstance = hInstance;
     win.lpszClassName = sample_window_class_wn.as_ptr();
+    win.hCursor = unsafe { window::LoadCursorW(hInstance, window::IDC_ARROW)};
 
     let atom = unsafe { window::RegisterClassW(&win) };
     if atom == 0 {
