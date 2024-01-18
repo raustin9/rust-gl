@@ -24,6 +24,8 @@ extern "system" {
     ) -> DWORD;
 
     pub fn LocalFree(hMem: HLOCAL) -> HLOCAL;
+
+    pub fn SetLastError(dwErrCode: DWORD);
 }
 
 #[allow(non_snake_case)]

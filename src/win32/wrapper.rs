@@ -1,6 +1,6 @@
 use crate::win32::*;
 
-use self::{window::{WNDCLASSW, CreateWindowExW, CW_USEDEFAULT}, core::GetLastError, types, utils::wide_null};
+use self::{window::{WNDCLASSW, CreateWindowExW, GWLP_USERDATA}, core::GetLastError, types, utils::wide_null};
 
 /// Abstraction to represent an error
 #[derive(Debug)]
@@ -177,7 +177,7 @@ pub unsafe fn create_app_window(
 
     let (x, y) = match position {
         Some([x, y]) => (x, y),
-        None => (CW_USEDEFAULT, CW_USEDEFAULT),
+        None => (window::CW_USEDEFAULT, window::CW_USEDEFAULT),
     };
 
     let hwnd = CreateWindowExW(
@@ -219,3 +219,123 @@ pub fn get_any_message() -> Result<window::MSG, Win32Error> {
     }
 }
 
+/// Translates virtual-key messags into character messages
+/// 
+/// The character messages go into your thread's message queue,
+/// and you'll see them if you continue to consume messages
+/// 
+/// **Returns:**
+/// - `true` if the message was `WM_KEYDOWN` or `WM_KEYUP` or `WM_SYSKEYDOWN` or `WM_SYSKEYUP`
+/// - `false` otherwise
+pub fn translate_message(msg: &window::MSG) -> bool {
+    return 0 != unsafe { window::TranslateMessage(msg) };
+}
+
+/// Sets the thread-local last-error code value
+/// 
+/// See [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
+pub fn set_last_error(e: Win32Error) {
+    unsafe { core::SetLastError(e.0) };
+}
+
+/// Sets the "userdata" pointer of the window (`GLWP_USERDATA`)
+/// 
+/// **Returns:** The previous userdata pointer
+/// 
+/// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+pub unsafe fn set_window_userdata<T>(
+    hwnd: types::HWND, ptr: *mut T,
+) -> Result<*mut T, Win32Error> {
+    set_last_error(Win32Error(0));
+    let out = window::SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as types::LONG_PTR);
+
+    if out == 0 {
+        // If the output is 0, then it is only 
+        // a "real" error if the last_error value is non-zero
+        let last_error = get_last_error();
+        if last_error.0 != 0 {
+            return Err(last_error);
+        } else {
+            return Ok(out as *mut T);
+        }
+    } else {
+        return Ok(out as *mut T);
+    }
+}
+
+/// Gets the "userdata" pointer of the window (`GWLP_USERDATA`)
+/// 
+/// **Returns:** The userdata pointer
+pub unsafe fn get_window_userdata<T>(hwnd: types::HWND) -> Result<*mut T, Win32Error> {
+    set_last_error(Win32Error(0));
+    let out = window::GetWindowLongPtrW(hwnd, window::GWLP_USERDATA);
+    if out == 0 {
+        // If the output is 0, then it is only 
+        // a "real" error if the last_error value is non-zero
+        let last_error = get_last_error();
+        if last_error.0 != 0 {
+            return Err(last_error);
+        } else {
+            return Ok(out as *mut T);
+        }
+    } else {
+        return Ok(out as *mut T);
+    }
+}
+
+/// Indicates to the system that a thread has made a request to terminate
+/// 
+/// The exit code becomes the `wparam` of the [`WM_QUIT`] message your 
+/// message loop eventually gets.
+/// 
+/// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
+pub fn post_quit_message(exit_code: types::c_int) {
+    return unsafe { window::PostQuitMessage(exit_code) };
+}
+
+/// Prepares the specified window for painting
+/// 
+/// On success: you get back both the `HDC` and `PAINTSTRUCT`
+/// that you will need for future painting calls like `EndPaint()`
+/// 
+/// [`BeginPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint)
+pub unsafe fn begin_paint(hwnd: types::HWND) -> Result<(types::HDC, window::PAINTSTRUCT), Win32Error> {
+    let mut ps = window::PAINTSTRUCT::default();
+    let hdc = window::BeginPaint(hwnd, &mut ps);
+    if hdc.is_null() {
+        return Err(get_last_error());
+    } else {
+        return Ok((hdc, ps));
+    }
+}
+
+/// See [`EndPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+pub unsafe fn end_paint(hwnd: types::HWND, ps: &window::PAINTSTRUCT) {
+    window::EndPaint(hwnd, ps);
+}
+
+/// Fills a rectangle with the given system color
+/// 
+/// When filling a rectangle, this does not include the 
+/// rectangle's right and bottom sides. GDI fills a rectangle
+/// up to, but not including, the right column and bottom row
+/// regardless of the current mapping mode
+/// [`FillRect`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+pub unsafe fn fill_rect_with_sys_color(
+    hdc: types::HDC, rect: &window::RECT, color: window::SysColor
+) -> Result<(), ()> {
+    if window::FillRect(hdc, rect, (color as u32 + 1) as types::HBRUSH) != 0 {
+        return Ok(());
+    } else {
+        return Err(());
+    }
+}
+
+pub unsafe fn paint_window<F, T>(hwnd: types::HWND, f: F) -> Result<T, Win32Error>
+where F: FnOnce(types::HDC, bool, window::RECT) -> Result<T, Win32Error>,
+{
+    let (hdc, ps) = begin_paint(hwnd)?;
+    let output = f(hdc, ps.fErase != 0, ps.rcPaint);
+    end_paint(hwnd, &ps);
+    return output;
+}

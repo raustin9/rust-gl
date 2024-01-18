@@ -72,16 +72,17 @@ unsafe_impl_default_zeroed!(MSG);
 #[allow(non_snake_case)]
 #[repr(C)]
 pub struct PAINTSTRUCT {
-    hdc: HDC,
-    fErase: BOOL,
-    rcPaint: RECT,
-    fRestore: BOOL,
-    fIncUpdate: BOOL,
-    rgbReserved: [BYTE; 32],
+    pub hdc: HDC,
+    pub fErase: BOOL,
+    pub rcPaint: RECT,
+    pub fRestore: BOOL,
+    pub fIncUpdate: BOOL,
+    pub rgbReserved: [BYTE; 32],
 }
 unsafe_impl_default_zeroed!(PAINTSTRUCT);
 pub type LPPAINTSTRUCT = *mut PAINTSTRUCT;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(C)]
 pub struct RECT {
     left: LONG,
@@ -94,18 +95,18 @@ unsafe_impl_default_zeroed!(RECT);
 #[allow(non_snake_case)]
 #[repr(C)]
 pub struct CREATESTRUCTW {
-    lpCreateParams: LPVOID,
-    hInstance: HINSTANCE,
-    hMenu: HMENU,
-    hWndParent: HWND,
-    cy: c_int,
-    cx: c_int,
-    y: c_int,
-    x: c_int,
-    style: LONG,
-    lpszName: LPCWSTR,
-    lpszClass: LPCWSTR,
-    dwExStyle: DWORD,
+    pub lpCreateParams: LPVOID,
+    pub hInstance: HINSTANCE,
+    pub hMenu: HMENU,
+    pub hWndParent: HWND,
+    pub cy: c_int,
+    pub cx: c_int,
+    pub y: c_int,
+    pub x: c_int,
+    pub style: LONG,
+    pub lpszName: LPCWSTR,
+    pub lpszClass: LPCWSTR,
+    pub dwExStyle: DWORD,
 }
 unsafe_impl_default_zeroed!(CREATESTRUCTW);
 
@@ -154,7 +155,45 @@ pub enum IDCursor {
     Wait = 32514,
 }
 
-/// CONSTANTS ///
+/// See [`GetSysColor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor)
+pub enum SysColor {
+  _3dDarkShadow = 21,
+  _3dLight = 22,
+  ActiveBorder = 10,
+  ActiveCaption = 2,
+  AppWorkspace = 12,
+  /// Button face, also "3D face" color.
+  ButtonFace = 15,
+  /// Button highlight, also "3D highlight" color.
+  ButtonHighlight = 20,
+  /// Button shadow, also "3D shadow" color.
+  ButtonShadow = 16,
+  ButtonText = 18,
+  CaptionText = 9,
+  /// Desktop background color
+  Desktop = 1,
+  GradientActiveCaption = 27,
+  GradientInactiveCaption = 28,
+  GrayText = 17,
+  Highlight = 13,
+  HighlightText = 14,
+  HotLight = 26,
+  InactiveBorder = 11,
+  InactiveCaption = 3,
+  InactiveCaptionText = 19,
+  InfoBackground = 24,
+  InfoText = 23,
+  Menu = 4,
+  MenuHighlight = 29,
+  MenuBar = 30,
+  MenuText = 7,
+  ScrollBar = 0,
+  Window = 5,
+  WindowFrame = 6,
+  WindowText = 8,
+}
+
+// CONSTANTS //
 
 // WS values to specify parameters for Window's window
 // TODO: There are more, but this is enough for now
@@ -241,60 +280,6 @@ pub unsafe extern "system" fn dummy_window_procedure(
     return 0;
 }
 
-#[allow(non_snake_case)]
-pub unsafe extern "system" fn window_procedure(
-    hWnd: HWND,
-    Msg: UINT,
-    wParam: WPARAM,
-    lParam: LPARAM,
-) -> LRESULT {
-    match Msg {
-        // TODO: Set the title of the window in one of the creation events
-        WM_NCCREATE => {
-            println!("NC Create");
-            let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
-            if createstruct.is_null() {
-                return 0;
-            }
-            let boxed_i32_ptr: *mut i32 = (*createstruct).lpCreateParams.cast();
-            SetWindowLongPtrW(hWnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
-            return 1;
-        }
-        WM_CREATE => println!("CREATE"),
-        WM_CLOSE => drop(DestroyWindow(hWnd)),
-        WM_DESTROY => {
-            let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
-            let _dropped = Box::from_raw(ptr);
-            println!("Cleanup Window");
-            PostQuitMessage(0_i32);
-        }
-        WM_PAINT => {
-            let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
-            println!("Current ptr: {}", *ptr);
-            *ptr += 1;
-            let mut ps = PAINTSTRUCT::default();
-            let hdc = BeginPaint(hWnd, &mut ps);
-            let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW+1) as HBRUSH);
-            EndPaint(hWnd, &ps);
-        }
-        // WM_SETCURSOR => {
-        //     let hInstance = GetModuleHandleW(std::ptr::null());
-        //     let cursor = LoadCursorW(hInstance, IDC_ARROW);
-        //     let _old_cursor = SetCursor(cursor);
-        //     return 1;
-        // }
-        _ => {
-            return DefWindowProcW(
-                hWnd, 
-                Msg, 
-                wParam, 
-                lParam
-            );
-        }
-    }
-
-    return 0;
-}
 
 // Show the window
 #[link(name = "User32")]
