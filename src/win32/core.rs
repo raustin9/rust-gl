@@ -22,6 +22,8 @@ extern "system" {
         nSize: DWORD,
         Arguments: va_list,
     ) -> DWORD;
+
+    pub fn LocalFree(hMem: HLOCAL) -> HLOCAL;
 }
 
 #[allow(non_snake_case)]

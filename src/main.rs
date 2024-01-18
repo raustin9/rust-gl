@@ -8,7 +8,8 @@ use gltest::win32::{
 #[allow(non_snake_case)]
 fn main() {
     let hInstance = win32::wrapper::get_process_handle();
-    let sample_window_class_wn = win32::utils::wide_null("Test Window");
+    let sample_window_class = "Sample Window Class";
+    let sample_window_class_wn = win32::utils::wide_null(sample_window_class);
 
     let mut win: window::WNDCLASSW = window::WNDCLASSW::default();
     win.lpfnWndProc = Some(window::window_procedure);
@@ -16,37 +17,16 @@ fn main() {
     win.lpszClassName = sample_window_class_wn.as_ptr();
     win.hCursor = win32::wrapper::load_predefined_cursor(window::IDCursor::Arrow).unwrap();
 
-    let atom = unsafe { win32::wrapper::register_class(&win) }.unwrap_or_else(|()| {
-        let last_error = unsafe { win32::core::GetLastError() };
-        panic!("Could not register the window class. Error code: {}", last_error);
-    });
-
-    let atom = unsafe { window::RegisterClassW(&win) };
-    if atom == 0 {
-        let last_error = unsafe { win32::core::GetLastError() };
-        panic!("Could not register the window class, error code: {}", last_error);
-    }
+    let _atom = unsafe { win32::wrapper::register_class(&win)}.unwrap();
 
     let lparam: *mut i32 = Box::leak(Box::new(5_i32)); // make this leak so that we can clean it up on window destruction rather than scope
-    let hwnd = unsafe {
-        window::CreateWindowExW(
-            0, 
-            sample_window_class_wn.as_ptr(), 
-            sample_window_class_wn.as_ptr(), 
-            window::WS_OVERLAPPEDWINDOW, 
-            window::CW_USEDEFAULT, 
-            window::CW_USEDEFAULT, 
-            window::CW_USEDEFAULT, 
-            window::CW_USEDEFAULT, 
-            std::ptr::null_mut(), 
-            std::ptr::null_mut(), 
-            hInstance, 
-            lparam.cast()
-        )
-    };
-    if hwnd.is_null() {
-        panic!("Failed to create window");
-    }
+    let hwnd = unsafe { win32::wrapper::create_app_window(
+        sample_window_class, 
+        "Test Window", 
+        None,
+        [800, 600], 
+        lparam.cast(),
+    )}.unwrap();
 
     let _previously_visible = unsafe { window::ShowWindow(hwnd, window::SW_SHOW) };
 

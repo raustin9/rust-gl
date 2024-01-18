@@ -32,6 +32,9 @@ pub type HBRUSH = HANDLE;
 pub type HANDLE = PVOID;
 
 #[allow(non_camel_case_types)]
+pub type HLOCAL = HANDLE;
+
+#[allow(non_camel_case_types)]
 pub type HMODULE = HINSTANCE;
 
 #[allow(non_camel_case_types)]
@@ -98,7 +101,7 @@ pub type HDC = HANDLE;
 pub type BYTE = u8;
 
 #[allow(non_camel_case_types)]
-pub type LPCVOID = std::ffi::c_void;
+pub type LPCVOID = *const std::ffi::c_void;
 
 #[allow(non_camel_case_types)]
 pub type va_list = *mut c_char;
