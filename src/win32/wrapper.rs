@@ -1,10 +1,6 @@
-use std::ptr::null_mut;
-
-use windows_native::ntexapi::TRACE_HEADER_ENUM_MASK;
-
 use crate::win32::*;
 
-use self::{window::{WNDCLASSW, CreateWindowExW, CW_USEDEFAULT}, core::GetLastError, types::{LPCWSTR, HINSTANCE}, utils::wide_null};
+use self::{window::{WNDCLASSW, CreateWindowExW, CW_USEDEFAULT}, core::GetLastError, types, utils::wide_null};
 
 /// Abstraction to represent an error
 #[derive(Debug)]
@@ -132,7 +128,7 @@ pub fn get_last_error() -> Win32Error {
 pub unsafe fn create_window_ex_w(
     ex_style: types::DWORD,
     class_name: types::LPCWSTR,
-    window_name: LPCWSTR,
+    window_name: types::LPCWSTR,
     style: types::DWORD,
     x: types::c_int,
     y: types::c_int,
@@ -205,3 +201,21 @@ pub unsafe fn create_app_window(
         return Ok(hwnd);
     }
 }
+
+/// Gets a message from the thread's message queue.
+/// 
+/// The message can be for any window from this thread,
+/// or it can be a non-window message.
+/// 
+/// See [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
+#[inline(always)]
+pub fn get_any_message() -> Result<window::MSG, Win32Error> {
+    let mut msg = window::MSG::default();
+    let output = unsafe { window::GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) };
+    if output == -1 {
+        return Err(get_last_error());
+    } else {
+        return Ok(msg);
+    }
+}
+

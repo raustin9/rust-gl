@@ -57,13 +57,13 @@ unsafe_impl_default_zeroed!(WNDCLASSW);
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct MSG {
-    hwnd: HWND,
-    message: UINT,
-    wParam: WPARAM,
-    lParam: LPARAM,
-    time: DWORD,
-    pt: POINT,
-    lPrivate: DWORD,
+    pub hwnd: HWND,
+    pub message: UINT,
+    pub wParam: WPARAM,
+    pub lParam: LPARAM,
+    pub time: DWORD,
+    pub pt: POINT,
+    pub lPrivate: DWORD,
 }
 pub type LPMSG = *mut MSG;
 unsafe_impl_default_zeroed!(MSG);
@@ -179,6 +179,7 @@ pub const WS_EX_OVERLAPPEDWINDOW: DWORD = WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE;
 pub const CW_USEDEFAULT: c_int = 0x8000_0000_u32 as c_int;
 pub const SW_SHOW: c_int = 5;
 pub const WM_CLOSE: u32 = 0x0010;
+pub const WM_QUIT: u32 = 0x0012;
 pub const WM_DESTROY: u32 = 0x0002;
 
 pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
@@ -263,7 +264,7 @@ pub unsafe extern "system" fn window_procedure(
         WM_CLOSE => drop(DestroyWindow(hWnd)),
         WM_DESTROY => {
             let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
-            Box::from_raw(ptr);
+            let _dropped = Box::from_raw(ptr);
             println!("Cleanup Window");
             PostQuitMessage(0_i32);
         }

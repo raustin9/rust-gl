@@ -30,21 +30,33 @@ fn main() {
 
     let _previously_visible = unsafe { window::ShowWindow(hwnd, window::SW_SHOW) };
 
-    let mut msg = window::MSG::default();
+    // let mut msg = window::MSG::default();
     loop {
-        let message_return = unsafe { window::GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) };
-
-        if message_return == 0 {
-            break;
-        } else if message_return == -1 {
-            let last_error = unsafe { win32::core::GetLastError() };
-            panic!("Error with win32::core::GetMessageW. Error code: {}", last_error);
-        } else {
-            unsafe {
-                window::TranslateMessage(&msg);
-                window::DispatchMessageW(&msg);
+        match win32::wrapper::get_any_message() {
+            Ok(msg) => {
+                if msg.message == window::WM_QUIT {
+                    break;
+                }
+                unsafe {
+                    window::TranslateMessage(&msg);
+                    window::DispatchMessageW(&msg);
+                }
             }
+            Err(e) => panic!("Error when getting msg from message queue: {}", e),
         }
+        // let message_return = unsafe { window::GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) };
+
+        // if message_return == 0 {
+        //     break;
+        // } else if message_return == -1 {
+        //     let last_error = unsafe { win32::core::GetLastError() };
+        //     panic!("Error with win32::core::GetMessageW. Error code: {}", last_error);
+        // } else {
+        //     unsafe {
+        //         window::TranslateMessage(&msg);
+        //         window::DispatchMessageW(&msg);
+        //     }
+        // }
     }
 
 
